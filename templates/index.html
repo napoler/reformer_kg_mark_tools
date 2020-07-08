@@ -18,10 +18,68 @@
   <style>
 
   </style>
-  <script id="hot_list" type="text/html">
- 
-<%= data %>
 
+<script id="modal_edit" type="text/html">
+
+            <i class="close icon"></i>
+            <div class="header">
+              编辑
+            </div>
+            <div class=" content">
+        
+              <div class="description">
+                <%= data %> 
+              </div>
+
+              <div class="ui ignored info message">每行一条，示例 实体||关系||描述 </div>
+              <div  class="ui form edit">
+                <div class="field">
+                  <label>Text</label>
+                  <textarea></textarea>
+                </div>
+                <div class="field">
+               
+                </div>
+              </div>
+
+
+
+            </div>
+            <div class="actions">
+              <div id="cancel_edit" class="ui button">Cancel</div>
+              <button id="submit_edit" class="ui button " type="submit">Submit</button>
+            </div>
+ 
+
+</script>
+
+ 
+
+
+
+
+
+
+
+<script id="hot_item" type="text/html">
+
+  <div class="content_item column">
+    <h2 class="ui header">
+ <%= data.title %></h2>
+<div class="ui text container">
+ <%= data.content %>
+</div>
+</div>
+
+</script>
+
+
+
+
+  <script id="hot_list" type="text/html">
+    <div class="ui grid">
+    <% include('hot_item') %>
+    </div>
     </script>
 
   <script type="text/javascript">
@@ -32,6 +90,9 @@
       // 反馈
       socket.on('demo response', function (msg) {
         console.log("msg",msg);
+        if (msg==="start"){
+          $('#main_box').html('');
+        }
 
         // 数据写入模板
         var pagefn=template("hot_list", msg) 
@@ -40,11 +101,137 @@
 
 
       })
+      // 反馈
+      socket.on('submit_marked response', function (msg) {
+        console.log("msg",msg);
+ 
+          $('#msg').html(msg.msg)
+
+
+      })
+      // 获取之前标记数据或者Ai生成的
+      socket.on('pre_mark response', function (msg) {
+        console.log("msg",msg);
+        var kgs=[]
+        msg.kgs.forEach(function(value){
+          kgs.push(value.join("||"))
+ 
+
+          })
+ 
+          $('#modal_edit_box textarea').val(kgs.join("\n"))
+
+
+      })
+      
+
+
+
+/* Define API endpoints once globally */
+$.fn.api.settings.api = {
+ 
+  'addner'        : '/api/addner/?query={value}',
+  'search'        : '/api/search/?query={value}'
+};
+function aa(){
+  console.log("2222")
+}
+
+$('#search')
+  .api({
+    action: 'search',
+      // arbitrary POST/GET same across all requests
+      data: {
+      session: 22
+    },
+    onComplete: function(response) {
+      // always called after XHR complete
+      console.log("执行成功")
+      console.log(response)
+      $('#main_box').empty()
+      response.datas.forEach(function(value){
+ 
+        var pagefn=template("hot_list", value) 
+      $('#main_box').prepend(pagefn)
+
+      })
+
+    },
+  })
+;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 
     })
+
+
+    // 点击内容进行编辑
+    $(document).on('click', '.content_item .text', function () {
+    
+      // socket.emit('demo', { data: '111112212','check':"5252sp" });
+      
+      var value={'data':$(this).text()};
+      console.log("点击搜索结果:",value);
+      console.log("开始pre_mark:",value)
+      socket.emit('pre_mark', { 'text':value });
+      var pagefn=template("modal_edit", value) ;
+      // console.log("渲染结果",pagefn);
+      $('#modal_edit_box').html(pagefn);
+
+      $('#modal_edit_box')
+        .modal('show').modal('setting', 'closable', false)
+      ;
+
+  })
+
+    // 点击内容进行编辑
+    $(document).on('click', '#submit_edit', function () {
+      var text=$("#modal_edit_box .description").text();
+
+      var marked=$("#modal_edit_box textarea").val();
+      socket.emit('submit_marked', { 'text': text,'marked':marked });
+ 
+    $('#modal_edit_box')
+      .modal('hide')
+    ;
+
+})
+  
+
+
+    // 点击关闭编辑
+    $(document).on('click', '#cancel_edit', function () {
+    $('#modal_edit_box')
+      .modal('hide')
+    ;
+
+})
+  
+
+
+
+
+
+
+
+
+
 
 
 
@@ -125,10 +312,11 @@
       <button id="unused" class="ui button">忽略</button>
   
     </div>
-
+    <!-- <div id="modal_edit_box" class="ui modal"></div> -->
+    <div id="modal_edit_box" class="ui modal fullscreen longer"></div>
+    <div id="msg"></div>
 <div id="main_box"></div>
-
-
+ 
 
 
 
