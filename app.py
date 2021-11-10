@@ -41,7 +41,7 @@ def demo(message):
     while  True:
         emit('demo response', {'do': "start"})
 
-        for it in search_sent_plus("柯基犬"):
+        for it in search_sent_plus(keyword):
             # emit('demo response', {'data': time.time()})
             # print()
             emit('demo response', {'data': it.content})
